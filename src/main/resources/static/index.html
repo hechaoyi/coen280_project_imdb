@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <link rel="stylesheet" href="https://unpkg.com/element-ui@2.4.9/lib/theme-chalk/index.css">
+</head>
+<body>
+<div id="app">
+    <el-container>
+        <!--<el-header></el-header>-->
+        <el-main>
+            <el-card>
+                <el-table :data="movies" stripe>
+                    <el-table-column prop="id" label="ID" width="100"></el-table-column>
+                    <el-table-column prop="title" label="Title"></el-table-column>
+                    <el-table-column prop="year" label="Year" width="100"></el-table-column>
+                </el-table>
+            </el-card>
+        </el-main>
+    </el-container>
+</div>
+</body>
+<script src="https://unpkg.com/vue@2.5.17/dist/vue.js"></script>
+<script src="https://unpkg.com/element-ui@2.4.9/lib/index.js"></script>
+<script src="https://unpkg.com/element-ui@2.4.9/lib/umd/locale/en.js"></script>
+<script src="https://unpkg.com/axios@0.18.0/dist/axios.min.js"></script>
+<script>
+    ELEMENT.locale(ELEMENT.lang.en)
+    new Vue({
+        el: '#app',
+        data: {
+            movies: []
+        },
+        created: function () {
+            var vm = this;
+            axios.get('/movies').then(function (response) {
+                vm.movies = response.data;
+            });
+        }
+    })
+</script>
+</html>
