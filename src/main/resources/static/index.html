@@ -7,10 +7,44 @@
 <body>
 <div id="app">
     <el-container>
-        <!--<el-header></el-header>-->
+        <el-header height="240px">
+            <el-row :gutter="10">
+                <el-col :span="4">
+                    <el-card shadow="hover">
+                        <h4>Genres</h4>
+                        <el-checkbox-group v-model="selectedGenres">
+                            <div v-for="g in genres">
+                                <el-checkbox :label="g.id">{{ g.name }}</el-checkbox>
+                            </div>
+                        </el-checkbox-group>
+                    </el-card>
+                </el-col>
+                <el-col :span="4">
+                    <el-card shadow="hover">
+                        <h4>Countries</h4>
+                        <el-checkbox-group v-model="selectedMakingCountries">
+                            <div v-for="c in countries">
+                                <el-checkbox :label="c.id">{{ c.name }}</el-checkbox>
+                            </div>
+                        </el-checkbox-group>
+                    </el-card>
+                </el-col>
+                <el-col :span="4">
+                    <el-card shadow="hover">
+                        <h4>Location Countries</h4>
+                        <el-checkbox-group v-model="selectedFilmingCountries">
+                            <div v-for="c in countries">
+                                <el-checkbox :label="c.id">{{ c.name }}</el-checkbox>
+                            </div>
+                        </el-checkbox-group>
+                    </el-card>
+                </el-col>
+                <el-col :span="12"></el-col>
+            </el-row>
+        </el-header>
         <el-main>
             <el-card>
-                <el-table :data="movies" stripe>
+                <el-table :data="movies" stripe v-loading="loadingMovies" height="360px">
                     <el-table-column prop="id" label="ID" width="100"></el-table-column>
                     <el-table-column prop="title" label="Title"></el-table-column>
                     <el-table-column prop="year" label="Year" width="100"></el-table-column>
@@ -24,19 +58,69 @@
 <script src="https://unpkg.com/element-ui@2.4.9/lib/index.js"></script>
 <script src="https://unpkg.com/element-ui@2.4.9/lib/umd/locale/en.js"></script>
 <script src="https://unpkg.com/axios@0.18.0/dist/axios.min.js"></script>
+<script src="https://unpkg.com/lodash@4.17.11/lodash.js"></script>
 <script>
     ELEMENT.locale(ELEMENT.lang.en)
-    new Vue({
+    var vm = new Vue({
         el: '#app',
         data: {
-            movies: []
+            genres: [],
+            selectedGenres: [],
+            countries: [],
+            selectedMakingCountries: [],
+            selectedFilmingCountries: [],
+            movies: [],
+            loadingMovies: false
+        },
+        watch: {
+            selectedGenres: function () {
+                this.debouncedGetMovies();
+            },
+            selectedMakingCountries: function () {
+                this.debouncedGetMovies();
+            },
+            selectedFilmingCountries: function () {
+                this.debouncedGetMovies();
+            }
         },
         created: function () {
             var vm = this;
-            axios.get('/movies').then(function (response) {
-                vm.movies = response.data;
+            axios.get('/genres').then(function (response) {
+                vm.genres = response.data;
             });
+            axios.get('/countries').then(function (response) {
+                vm.countries = response.data;
+            });
+            this.getMovies();
+            this.debouncedGetMovies = _.debounce(this.getMovies, 1000)
+        },
+        methods: {
+            getMovies: function () {
+                var vm = this;
+                vm.loadingMovies = true;
+                axios.get('/movies', {
+                    params: {
+                        genres: this.selectedGenres.join(','),
+                        countries: this.selectedMakingCountries.join(','),
+                        locations: this.selectedFilmingCountries.join(',')
+                    }
+                }).then(function (response) {
+                    vm.movies = response.data;
+                    vm.loadingMovies = false;
+                });
+            }
         }
     })
 </script>
+<style>
+    .el-card h4 {
+        margin-top: 0px;
+        margin-bottom: 8px;
+    }
+
+    .el-card .el-checkbox-group {
+        height: 180px;
+        overflow-y: auto;
+    }
+</style>
 </html>
