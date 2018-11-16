@@ -29,6 +29,7 @@ public class Application {
     private final NamedParameterJdbcTemplate jdbcTemplate;
     private final BeanPropertyRowMapper<Entity> entityMapper = BeanPropertyRowMapper.newInstance(Entity.class);
     private final BeanPropertyRowMapper<Movie> movieMapper = BeanPropertyRowMapper.newInstance(Movie.class);
+    private final BeanPropertyRowMapper<Tag> tagMapper = BeanPropertyRowMapper.newInstance(Tag.class);
 
     @RequestMapping("/initialize")
     public Map<String, List<Entity>> initialize() {
@@ -40,16 +41,25 @@ public class Application {
     @RequestMapping("/prepare")
     public Map<String, Object> prepare(String genres, String countries, String locations,
                                        String startYear, String endYear,
+                                       String ratingOp, String ratingVal, String reviewsOp, String reviewsVal,
                                        @RequestParam(defaultValue = "true") boolean relationshipBetweenAttributes) {
         return Map.of(
-                "sql", query(genres, countries, locations, startYear, endYear, relationshipBetweenAttributes, null),
-                "availableGenres", availableGenres(countries, locations, startYear, endYear, relationshipBetweenAttributes),
-                "availableCountries", availableCountries(genres, locations, startYear, endYear, relationshipBetweenAttributes),
-                "availableLocations", availableLocations(genres, countries, startYear, endYear, relationshipBetweenAttributes));
+                "sql", query(genres, countries, locations, startYear, endYear,
+                        ratingOp, ratingVal, reviewsOp, reviewsVal, relationshipBetweenAttributes,
+                        new ArrayList<>(), null),
+                "availableGenres", availableGenres(countries, locations, startYear, endYear,
+                        ratingOp, ratingVal, reviewsOp, reviewsVal, relationshipBetweenAttributes),
+                "availableCountries", availableCountries(genres, locations, startYear, endYear,
+                        ratingOp, ratingVal, reviewsOp, reviewsVal, relationshipBetweenAttributes),
+                "availableLocations", availableLocations(genres, countries, startYear, endYear,
+                        ratingOp, ratingVal, reviewsOp, reviewsVal, relationshipBetweenAttributes));
     }
 
     private List<Integer> availableGenres(String countries, String locations,
-                                          String startYear, String endYear, boolean relationshipBetweenAttributes) {
+                                          String startYear, String endYear,
+                                          String ratingOp, String ratingVal,
+                                          String reviewsOp, String reviewsVal,
+                                          boolean relationshipBetweenAttributes) {
         String sql = "SELECT DISTINCT genre_id FROM movie_genre g WHERE 1=1";
         if (!relationshipBetweenAttributes)
             return jdbcTemplate.getJdbcTemplate().queryForList(sql, Integer.class);
@@ -70,11 +80,22 @@ public class Application {
                 endYear = "2100";
             params.addValue("startYear", startYear).addValue("endYear", endYear);
         }
+        if (ratingOp != null && !ratingOp.isBlank()) {
+            sql += " AND EXISTS(SELECT 1 FROM movie WHERE id=g.movie_id AND FLOOR(all_critics_rating)" + op(ratingOp) + ":ratingVal)";
+            params.addValue("ratingVal", ratingVal);
+        }
+        if (reviewsOp != null && !reviewsOp.isBlank()) {
+            sql += " AND EXISTS(SELECT 1 FROM movie WHERE id=g.movie_id AND all_critics_num" + op(reviewsOp) + ":reviewsVal)";
+            params.addValue("reviewsVal", reviewsVal);
+        }
         return jdbcTemplate.queryForList(sql, params, Integer.class);
     }
 
     private List<Integer> availableCountries(String genres, String locations,
-                                             String startYear, String endYear, boolean relationshipBetweenAttributes) {
+                                             String startYear, String endYear,
+                                             String ratingOp, String ratingVal,
+                                             String reviewsOp, String reviewsVal,
+                                             boolean relationshipBetweenAttributes) {
         String sql = "SELECT DISTINCT country_id FROM movie_country c WHERE 1=1";
         if (!relationshipBetweenAttributes)
             return jdbcTemplate.getJdbcTemplate().queryForList(sql, Integer.class);
@@ -95,11 +116,22 @@ public class Application {
                 endYear = "2100";
             params.addValue("startYear", startYear).addValue("endYear", endYear);
         }
+        if (ratingOp != null && !ratingOp.isBlank()) {
+            sql += " AND EXISTS(SELECT 1 FROM movie WHERE id=c.movie_id AND FLOOR(all_critics_rating)" + op(ratingOp) + ":ratingVal)";
+            params.addValue("ratingVal", ratingVal);
+        }
+        if (reviewsOp != null && !reviewsOp.isBlank()) {
+            sql += " AND EXISTS(SELECT 1 FROM movie WHERE id=c.movie_id AND all_critics_num" + op(reviewsOp) + ":reviewsVal)";
+            params.addValue("reviewsVal", reviewsVal);
+        }
         return jdbcTemplate.queryForList(sql, params, Integer.class);
     }
 
     private List<Integer> availableLocations(String genres, String countries,
-                                             String startYear, String endYear, boolean relationshipBetweenAttributes) {
+                                             String startYear, String endYear,
+                                             String ratingOp, String ratingVal,
+                                             String reviewsOp, String reviewsVal,
+                                             boolean relationshipBetweenAttributes) {
         String sql = "SELECT DISTINCT country_id FROM movie_location l WHERE 1=1";
         if (!relationshipBetweenAttributes)
             return jdbcTemplate.getJdbcTemplate().queryForList(sql, Integer.class);
@@ -120,13 +152,22 @@ public class Application {
                 endYear = "2100";
             params.addValue("startYear", startYear).addValue("endYear", endYear);
         }
+        if (ratingOp != null && !ratingOp.isBlank()) {
+            sql += " AND EXISTS(SELECT 1 FROM movie WHERE id=l.movie_id AND FLOOR(all_critics_rating)" + op(ratingOp) + ":ratingVal)";
+            params.addValue("ratingVal", ratingVal);
+        }
+        if (reviewsOp != null && !reviewsOp.isBlank()) {
+            sql += " AND EXISTS(SELECT 1 FROM movie WHERE id=l.movie_id AND all_critics_num" + op(reviewsOp) + ":reviewsVal)";
+            params.addValue("reviewsVal", reviewsVal);
+        }
         return jdbcTemplate.queryForList(sql, params, Integer.class);
     }
 
     private String query(String genres, String countries, String locations,
                          String startYear, String endYear,
-                         boolean relationshipBetweenAttributes, MapSqlParameterSource params) {
-        List<String> criteria = new ArrayList<>();
+                         String ratingOp, String ratingVal, String reviewsOp, String reviewsVal,
+                         boolean relationshipBetweenAttributes,
+                         List<String> criteria, MapSqlParameterSource params) {
         if (genres != null && !genres.isBlank()) {
             criteria.add("EXISTS(SELECT 1 FROM movie_genre WHERE movie_id=m.id AND genre_id IN (:genres))");
             if (params != null)
@@ -152,6 +193,16 @@ public class Application {
                 params.addValue("startYear", startYear).addValue("endYear", endYear);
             }
         }
+        if (ratingOp != null && !ratingOp.isBlank()) {
+            criteria.add("FLOOR(m.all_critics_rating)" + op(ratingOp) + ":ratingVal");
+            if (params != null)
+                params.addValue("ratingVal", ratingVal);
+        }
+        if (reviewsOp != null && !reviewsOp.isBlank()) {
+            criteria.add("m.all_critics_num" + op(reviewsOp) + ":reviewsVal");
+            if (params != null)
+                params.addValue("reviewsVal", reviewsVal);
+        }
         String select = "SELECT m.id,title,year,pic_url," +
                 "all_critics_rating,top_critics_rating,audience_rating," +
                 "all_critics_num,top_critics_num,audience_num" +
@@ -165,17 +216,34 @@ public class Application {
                 select, String.join("\n  UNION\n  SELECT id FROM movie m\n    WHERE ", criteria));
     }
 
+    private String op(String op) {
+        return op.equals("≤") ? "<=" : op.equals("≥") ? ">=" : op;
+    }
+
     @RequestMapping("/movies")
     public Page movies(String genres, String countries, String locations,
                        String startYear, String endYear,
+                       String ratingOp, String ratingVal, String reviewsOp, String reviewsVal,
                        @RequestParam(defaultValue = "true") boolean relationshipBetweenAttributes,
                        @RequestParam(defaultValue = "1") int page) {
+        List<String> criteria = new ArrayList<>();
         MapSqlParameterSource params = new MapSqlParameterSource();
-        String sql = query(genres, countries, locations, startYear, endYear, relationshipBetweenAttributes, params);
+        String sql = query(genres, countries, locations, startYear, endYear,
+                ratingOp, ratingVal, reviewsOp, reviewsVal, relationshipBetweenAttributes, criteria, params);
         int count = jdbcTemplate.queryForObject("SELECT COUNT(1) FROM (" + sql + ")", params, Integer.class);
         sql = "SELECT * FROM (SELECT ROWNUM rn, o.* FROM (" + sql + ") o WHERE ROWNUM<=:upper) WHERE rn>:lower";
         params.addValue("upper", page * 10).addValue("lower", (page - 1) * 10);
         List<Movie> movies = jdbcTemplate.query(sql, params, movieMapper);
+        fillInSubData(movies);
+        List<Tag> tags = null;
+        if (criteria.size() > 1 && relationshipBetweenAttributes)
+            tags = fillInTagData(criteria, params);
+        return new Page(movies, count, tags);
+    }
+
+    private void fillInSubData(List<Movie> movies) {
+        if (movies.isEmpty())
+            return;
         var moviesMap = movies.stream().collect(Collectors.toMap(m -> String.valueOf(m.getId()), m -> m));
         jdbcTemplate.queryForList(
                 "SELECT movie_id,name FROM movie_country JOIN country ON country_id=id WHERE movie_id IN (:movies)",
@@ -211,7 +279,18 @@ public class Application {
                         movie.getLocations().add(location);
                     }
                 });
-        return new Page(movies, count);
+    }
+
+    private List<Tag> fillInTagData(List<String> criteria, MapSqlParameterSource params) {
+        String sql = String.format("FROM movie m JOIN movie_tag ON m.id=movie_id WHERE %s",
+                String.join(" AND ", criteria));
+        int count = jdbcTemplate.queryForObject("SELECT COUNT(DISTINCT tag_id) " + sql, params, Integer.class);
+        if (count > 200)
+            return null;
+        sql = "SELECT name,weight FROM tag JOIN (" +
+                "SELECT tag_id,SUM(weight) weight " + sql + " GROUP BY tag_id" +
+                ") ON id=tag_id ORDER BY weight DESC";
+        return jdbcTemplate.query(sql, params, tagMapper);
     }
 }
 
@@ -220,7 +299,7 @@ class Movie {
     private int id;
     private String title;
     private int year;
-    private String pic_url;
+    private String picUrl;
     private Float allCriticsRating;
     private Float topCriticsRating;
     private Float audienceRating;
@@ -239,8 +318,15 @@ class Entity {
 }
 
 @Data
+class Tag {
+    private String name;
+    private int weight;
+}
+
+@Data
 @AllArgsConstructor
 class Page {
     private List<Movie> movies;
     private int count;
+    private List<Tag> tags;
 }

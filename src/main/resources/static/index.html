@@ -7,9 +7,9 @@
 <body>
 <div id="app">
     <el-container>
-        <el-header height="240px">
+        <el-header height="285px">
             <el-row :gutter="10">
-                <el-col :span="4">
+                <el-col :span="3">
                     <el-card shadow="hover">
                         <h4>Genres</h4>
                         <el-checkbox-group v-model="selectedGenres" v-loading="loadingEntities">
@@ -39,9 +39,9 @@
                         </el-checkbox-group>
                     </el-card>
                 </el-col>
-                <el-col :span="8">
+                <el-col :span="13">
                     <el-card shadow="hover">
-                        <el-form label-width="80px">
+                        <el-form label-width="120px">
                             <el-form-item label="Movie Year">
                                 <el-date-picker type="year" value-format="yyyy" v-model="startYear" size="mini"
                                                 placeholder="start year" style="width: 120px">
@@ -49,6 +49,39 @@
                                 <el-date-picker type="year" value-format="yyyy" v-model="endYear" size="mini"
                                                 placeholder="end year" style="width: 120px">
                                 </el-date-picker>
+                            </el-form-item>
+                            <el-form-item label="Critics Rating">
+                                <el-radio-group v-model="ratingOp" size="mini">
+                                    <el-radio-button label="<"></el-radio-button>
+                                    <el-radio-button label="≤"></el-radio-button>
+                                    <el-radio-button label="="></el-radio-button>
+                                    <el-radio-button label="≥"></el-radio-button>
+                                    <el-radio-button label=">"></el-radio-button>
+                                </el-radio-group>
+                                &nbsp;&nbsp;
+                                <el-button type="text" :disabled="!ratingOp" @click="ratingOp=''">clear</el-button>
+                                &nbsp;&nbsp;&nbsp;&nbsp;
+                                <el-rate v-model="ratingVal" :colors="['#99A9BF', '#F7BA2A', '#FF9900']"
+                                         :max="10" :low-threshold="3" :high-threshold="8" show-score
+                                         style="display: inline-flex"></el-rate>
+                            </el-form-item>
+                            <el-form-item label="Critics Reviews">
+                                <el-radio-group v-model="reviewsOp" size="mini">
+                                    <el-radio-button label="<"></el-radio-button>
+                                    <el-radio-button label="≤"></el-radio-button>
+                                    <el-radio-button label="="></el-radio-button>
+                                    <el-radio-button label="≥"></el-radio-button>
+                                    <el-radio-button label=">"></el-radio-button>
+                                </el-radio-group>
+                                &nbsp;&nbsp;
+                                <el-button type="text" :disabled="!reviewsOp" @click="reviewsOp=''">clear</el-button>
+                                &nbsp;&nbsp;&nbsp;&nbsp;
+                                <el-input-number v-model="reviewsVal" :min="1" size="mini"></el-input-number>
+                            </el-form-item>
+                            <el-form-item label="Between Criteria">
+                                <el-switch v-model="relationshipBetweenAttributes"
+                                           active-color="#13CE66" inactive-color="#409EFF"
+                                           active-text="AND" inactive-text="OR"></el-switch>
                             </el-form-item>
                         </el-form>
                     </el-card>
@@ -58,50 +91,64 @@
         <el-main>
             <el-row :gutter="10">
                 <el-col :span="8">
-                    <el-card shadow="never" v-loading="loadingEntities || loadingMovies">
-                        <el-switch v-model="relationshipBetweenAttributes"
-                                   active-color="#13CE66" inactive-color="#409EFF"
-                                   active-text="AND" inactive-text="OR"></el-switch>
-                        <div class="sql-panel">
-                            <pre><code>{{ sql }}</code></pre>
-                        </div>
-                    </el-card>
+                    <el-row>
+                        <el-card shadow="never" v-loading="loadingEntities">
+                            <h4>Tags</h4>
+                            <div class="tag-panel">
+                                <el-badge v-for="t in tags" :value="t.weight"
+                                          :type="t.weight > 10 ? 'danger' : 'primary'">
+                                    <el-button size="mini">{{ t.name }}</el-button>
+                                </el-badge>
+                            </div>
+                        </el-card>
+                    </el-row>
+                    <el-row style="margin-top: 10px">
+                        <el-card shadow="never" v-loading="loadingEntities">
+                            <div class="sql-panel">
+                                <pre><code>{{ sql }}</code></pre>
+                            </div>
+                        </el-card>
+                    </el-row>
                 </el-col>
                 <el-col :span="16">
                     <el-card v-loading="loadingMovies">
                         <el-table :data="movies" stripe height="320px">
                             <el-table-column type="expand">
                                 <template slot-scope="props">
-                                    <el-form label-position="left" inline class="demo-table-expand">
-                                        <el-form-item label="All Critics rating">
-                                            <span>{{ props.row.allCriticsRating }}</span>
-                                        </el-form-item>
-                                        <el-form-item label="All Critics reviews">
-                                            <span>{{ props.row.allCriticsNum }}</span>
-                                        </el-form-item>
-                                        <el-form-item label="Top Critics rating">
-                                            <span>{{ props.row.topCriticsRating }}</span>
-                                        </el-form-item>
-                                        <el-form-item label="Top Critics reviews">
-                                            <span>{{ props.row.topCriticsNum }}</span>
-                                        </el-form-item>
-                                        <el-form-item label="Audiences rating">
-                                            <span>{{ props.row.audienceRating }}</span>
-                                        </el-form-item>
-                                        <el-form-item label="Audiences ratings">
-                                            <span>{{ props.row.audienceNum }}</span>
-                                        </el-form-item>
-                                        <el-form-item label="Genres">
-                                            <ul>
-                                                <li v-for="g in props.row.genres">{{ g }}</li>
-                                            </ul>
-                                        </el-form-item>
-                                        <el-form-item label="Locations">
-                                            <ul>
-                                                <li v-for="l in props.row.locations">{{ l }}</li>
-                                            </ul>
-                                        </el-form-item>
-                                    </el-form>
+                                    <el-popover placement="top-end" width="300" trigger="hover">
+                                        <img :src="props.row.picUrl" class="image">
+                                        <el-form slot="reference" label-position="left" inline
+                                                 class="demo-table-expand">
+                                            <el-form-item label="All Critics rating">
+                                                <span>{{ props.row.allCriticsRating }}</span>
+                                            </el-form-item>
+                                            <el-form-item label="All Critics reviews">
+                                                <span>{{ props.row.allCriticsNum }}</span>
+                                            </el-form-item>
+                                            <el-form-item label="Top Critics rating">
+                                                <span>{{ props.row.topCriticsRating }}</span>
+                                            </el-form-item>
+                                            <el-form-item label="Top Critics reviews">
+                                                <span>{{ props.row.topCriticsNum }}</span>
+                                            </el-form-item>
+                                            <el-form-item label="Audiences rating">
+                                                <span>{{ props.row.audienceRating }}</span>
+                                            </el-form-item>
+                                            <el-form-item label="Audiences ratings">
+                                                <span>{{ props.row.audienceNum }}</span>
+                                            </el-form-item>
+                                            <el-form-item label="Genres">
+                                                <ul>
+                                                    <li v-for="g in props.row.genres">{{ g }}</li>
+                                                </ul>
+                                            </el-form-item>
+                                            <el-form-item label="Locations">
+                                                <ul>
+                                                    <li v-for="l in props.row.locations">{{ l }}</li>
+                                                </ul>
+                                            </el-form-item>
+                                        </el-form>
+                                    </el-popover>
                                 </template>
                             </el-table-column>
                             <el-table-column prop="id" label="ID" width="80"></el-table-column>
@@ -110,7 +157,7 @@
                             <el-table-column prop="year" label="Year" width="80"></el-table-column>
                         </el-table>
                         <el-pagination :current-page.sync="currentPage" :total="moviesCount"
-                                       layout="total, prev, pager, next"></el-pagination>
+                                       layout="total, prev, pager, next, jumper"></el-pagination>
                     </el-card>
                 </el-col>
             </el-row>
@@ -135,8 +182,13 @@
             selectedFilmingCountries: [],
             startYear: '',
             endYear: '',
+            ratingOp: '',
+            ratingVal: 8,
+            reviewsOp: '',
+            reviewsVal: 10,
             loadingEntities: false,
             movies: [],
+            tags: [],
             loadingMovies: false,
             currentPage: 1,
             moviesCount: 0,
@@ -161,6 +213,24 @@
             },
             endYear: function () {
                 this.prepareMovies();
+            },
+            ratingOp: function () {
+                this.prepareMovies();
+            },
+            ratingVal: function () {
+                if (!this.ratingOp)
+                    this.ratingOp = '≥';
+                else
+                    this.prepareMovies();
+            },
+            reviewsOp: function () {
+                this.prepareMovies();
+            },
+            reviewsVal: function () {
+                if (!this.reviewsOp)
+                    this.reviewsOp = '≥';
+                else
+                    this.prepareMovies();
             },
             relationshipBetweenAttributes: function () {
                 this.prepareMovies();
@@ -206,6 +276,10 @@
                         locations: this.selectedFilmingCountries.join(','),
                         startYear: this.startYear,
                         endYear: this.endYear,
+                        ratingOp: this.ratingOp,
+                        ratingVal: this.ratingVal,
+                        reviewsOp: this.reviewsOp,
+                        reviewsVal: this.reviewsVal,
                         relationshipBetweenAttributes: this.relationshipBetweenAttributes
                     }
                 }).then(function (response) {
@@ -231,12 +305,17 @@
                         locations: this.selectedFilmingCountries.join(','),
                         startYear: this.startYear,
                         endYear: this.endYear,
+                        ratingOp: this.ratingOp,
+                        ratingVal: this.ratingVal,
+                        reviewsOp: this.reviewsOp,
+                        reviewsVal: this.reviewsVal,
                         relationshipBetweenAttributes: this.relationshipBetweenAttributes,
                         page: this.currentPage
                     }
                 }).then(function (response) {
                     vm.movies = response.data.movies;
                     vm.moviesCount = response.data.count;
+                    vm.tags = response.data.tags;
                     vm.loadingMovies = false;
                 });
             }
@@ -250,13 +329,24 @@
     }
 
     .el-card .el-checkbox-group {
-        height: 180px;
+        height: 225px;
         overflow-y: auto;
     }
 
+    .tag-panel {
+        padding-top: 10px;
+        height: 100px;
+        overflow-y: auto;
+    }
+
+    .tag-panel .el-badge {
+        margin-right: 20px;
+        margin-bottom: 10px;
+    }
+
     .sql-panel {
-        margin-top: 30px;
-        height: 320px;
+        height: 180px;
+        overflow-y: auto;
     }
 
     .sql-panel pre {
@@ -282,6 +372,10 @@
         margin-right: 0;
         margin-bottom: 0;
         width: 50%;
+    }
+
+    .image {
+        width: 100%;
     }
 </style>
 </html>
