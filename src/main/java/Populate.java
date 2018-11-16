@@ -64,11 +64,26 @@ class Populate {
     }
 
     private static void populateMovies(Path file, Connection conn) throws Exception {
-        var stmt = conn.prepareStatement("INSERT INTO movie(id,title,year) VALUES(?,?,?)");
+        var stmt = conn.prepareStatement("INSERT INTO movie(id,title,year," +
+                "all_critics_rating,top_critics_rating,audience_rating," +
+                "all_critics_num,top_critics_num,audience_num," +
+                "pic_url) VALUES(?,?,?,?,?,?,?,?,?,?)");
         batch(file, segments -> {
             stmt.setInt(1, Integer.parseInt(segments[0]));
             stmt.setString(2, segments[1]);
             stmt.setInt(3, Integer.parseInt(segments[5]));
+            if (segments[7].equals("\\N")) {
+                for (int i = 4; i <= 10; i++)
+                    stmt.setString(i, "");
+            } else {
+                stmt.setString(4, segments[7]);
+                stmt.setString(5, segments[12]);
+                stmt.setString(6, segments[17]);
+                stmt.setInt(7, Integer.parseInt(segments[8]));
+                stmt.setInt(8, Integer.parseInt(segments[13]));
+                stmt.setInt(9, Integer.parseInt(segments[18]));
+                stmt.setString(10, segments[20]);
+            }
             stmt.addBatch();
             return true;
         }, () -> stmt.executeBatch());

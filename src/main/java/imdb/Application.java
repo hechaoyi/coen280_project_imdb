@@ -16,6 +16,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 @SpringBootApplication
 @RestController
@@ -151,13 +152,17 @@ public class Application {
                 params.addValue("startYear", startYear).addValue("endYear", endYear);
             }
         }
+        String select = "SELECT m.id,title,year,pic_url," +
+                "all_critics_rating,top_critics_rating,audience_rating," +
+                "all_critics_num,top_critics_num,audience_num" +
+                " FROM movie m";
         if (criteria.isEmpty())
-            return "SELECT id,title,year FROM movie ORDER BY id";
+            return select + " ORDER BY id";
         if (criteria.size() == 1 || relationshipBetweenAttributes)
-            return String.format("SELECT id,title,year FROM movie m\n  WHERE %s\nORDER BY id",
-                    String.join("\n  AND ", criteria));
-        return String.format("SELECT * FROM (\n  SELECT id,title,year FROM movie m\n    WHERE %s\n) ORDER BY id",
-                String.join("\n  UNION\n  SELECT id,title,year FROM movie m\n    WHERE ", criteria));
+            return String.format("%s\n  WHERE %s\nORDER BY id",
+                    select, String.join("\n  AND ", criteria));
+        return String.format("%s JOIN (\n  SELECT id FROM movie m\n    WHERE %s\n) m2 ON m.id=m2.id ORDER BY m2.id",
+                select, String.join("\n  UNION\n  SELECT id FROM movie m\n    WHERE ", criteria));
     }
 
     @RequestMapping("/movies")
@@ -170,7 +175,43 @@ public class Application {
         int count = jdbcTemplate.queryForObject("SELECT COUNT(1) FROM (" + sql + ")", params, Integer.class);
         sql = "SELECT * FROM (SELECT ROWNUM rn, o.* FROM (" + sql + ") o WHERE ROWNUM<=:upper) WHERE rn>:lower";
         params.addValue("upper", page * 10).addValue("lower", (page - 1) * 10);
-        return new Page(jdbcTemplate.query(sql, params, movieMapper), count);
+        List<Movie> movies = jdbcTemplate.query(sql, params, movieMapper);
+        var moviesMap = movies.stream().collect(Collectors.toMap(m -> String.valueOf(m.getId()), m -> m));
+        jdbcTemplate.queryForList(
+                "SELECT movie_id,name FROM movie_country JOIN country ON country_id=id WHERE movie_id IN (:movies)",
+                Map.of("movies", moviesMap.keySet()))
+                .forEach(e -> {
+                    var movie = moviesMap.get(e.get("MOVIE_ID").toString());
+                    if (movie != null)
+                        movie.setCountry((String) e.get("NAME"));
+                });
+        jdbcTemplate.queryForList(
+                "SELECT movie_id,name FROM movie_genre JOIN genre ON genre_id=id WHERE movie_id IN (:movies)",
+                Map.of("movies", moviesMap.keySet()))
+                .forEach(e -> {
+                    var movie = moviesMap.get(e.get("MOVIE_ID").toString());
+                    if (movie != null)
+                        movie.getGenres().add((String) e.get("NAME"));
+                });
+        jdbcTemplate.queryForList(
+                "SELECT movie_id,name,loc2,loc3,loc4 FROM movie_location JOIN country ON country_id=id WHERE movie_id IN (:movies)",
+                Map.of("movies", moviesMap.keySet()))
+                .forEach(e -> {
+                    var movie = moviesMap.get(e.get("MOVIE_ID").toString());
+                    if (movie != null) {
+                        String location = (String) e.get("NAME"), loc2 = (String) e.get("LOC2"), loc3 = (String) e.get("LOC3"), loc4 = (String) e.get("LOC4");
+                        if (loc2 != null) {
+                            location += " " + loc2;
+                            if (loc3 != null) {
+                                location += " " + loc3;
+                                if (loc4 != null)
+                                    location += " " + loc4;
+                            }
+                        }
+                        movie.getLocations().add(location);
+                    }
+                });
+        return new Page(movies, count);
     }
 }
 
@@ -179,6 +220,16 @@ class Movie {
     private int id;
     private String title;
     private int year;
+    private String pic_url;
+    private Float allCriticsRating;
+    private Float topCriticsRating;
+    private Float audienceRating;
+    private Integer allCriticsNum;
+    private Integer topCriticsNum;
+    private Integer audienceNum;
+    private String country;
+    private List<String> genres = new ArrayList<>();
+    private List<String> locations = new ArrayList<>();
 }
 
 @Data

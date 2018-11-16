@@ -1,8 +1,15 @@
 CREATE TABLE movie
 (
-	id    INTEGER       PRIMARY KEY,
-	title VARCHAR2(255) NOT NULL,
-	year  INTEGER       NOT NULL
+	id                 INTEGER       PRIMARY KEY,
+	title              VARCHAR2(255) NOT NULL,
+	year               INTEGER       NOT NULL,
+	all_critics_rating NUMBER(3,1),
+	top_critics_rating NUMBER(3,1),
+	audience_rating    NUMBER(3,1),
+	all_critics_num    INTEGER,
+	top_critics_num    INTEGER,
+	audience_num       INTEGER,
+	pic_url            VARCHAR2(255)
 );
 
 

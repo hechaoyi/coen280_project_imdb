@@ -57,7 +57,7 @@
         </el-header>
         <el-main>
             <el-row :gutter="10">
-                <el-col :span="9">
+                <el-col :span="8">
                     <el-card shadow="never" v-loading="loadingEntities || loadingMovies">
                         <el-switch v-model="relationshipBetweenAttributes"
                                    active-color="#13CE66" inactive-color="#409EFF"
@@ -67,12 +67,47 @@
                         </div>
                     </el-card>
                 </el-col>
-                <el-col :span="15">
+                <el-col :span="16">
                     <el-card v-loading="loadingMovies">
                         <el-table :data="movies" stripe height="320px">
-                            <el-table-column prop="id" label="ID" width="100"></el-table-column>
+                            <el-table-column type="expand">
+                                <template slot-scope="props">
+                                    <el-form label-position="left" inline class="demo-table-expand">
+                                        <el-form-item label="All Critics rating">
+                                            <span>{{ props.row.allCriticsRating }}</span>
+                                        </el-form-item>
+                                        <el-form-item label="All Critics reviews">
+                                            <span>{{ props.row.allCriticsNum }}</span>
+                                        </el-form-item>
+                                        <el-form-item label="Top Critics rating">
+                                            <span>{{ props.row.topCriticsRating }}</span>
+                                        </el-form-item>
+                                        <el-form-item label="Top Critics reviews">
+                                            <span>{{ props.row.topCriticsNum }}</span>
+                                        </el-form-item>
+                                        <el-form-item label="Audiences rating">
+                                            <span>{{ props.row.audienceRating }}</span>
+                                        </el-form-item>
+                                        <el-form-item label="Audiences ratings">
+                                            <span>{{ props.row.audienceNum }}</span>
+                                        </el-form-item>
+                                        <el-form-item label="Genres">
+                                            <ul>
+                                                <li v-for="g in props.row.genres">{{ g }}</li>
+                                            </ul>
+                                        </el-form-item>
+                                        <el-form-item label="Locations">
+                                            <ul>
+                                                <li v-for="l in props.row.locations">{{ l }}</li>
+                                            </ul>
+                                        </el-form-item>
+                                    </el-form>
+                                </template>
+                            </el-table-column>
+                            <el-table-column prop="id" label="ID" width="80"></el-table-column>
                             <el-table-column prop="title" label="Title"></el-table-column>
-                            <el-table-column prop="year" label="Year" width="100"></el-table-column>
+                            <el-table-column prop="country" label="Country" width="160"></el-table-column>
+                            <el-table-column prop="year" label="Year" width="80"></el-table-column>
                         </el-table>
                         <el-pagination :current-page.sync="currentPage" :total="moviesCount"
                                        layout="total, prev, pager, next"></el-pagination>
@@ -226,11 +261,27 @@
 
     .sql-panel pre {
         white-space: pre-wrap;
+        word-break: break-word;
     }
 
     .el-pagination {
         margin-top: 20px;
         text-align: center;
+    }
+
+    .demo-table-expand {
+        font-size: 0;
+    }
+
+    .demo-table-expand label {
+        width: 125px;
+        color: #99a9bf;
+    }
+
+    .demo-table-expand .el-form-item {
+        margin-right: 0;
+        margin-bottom: 0;
+        width: 50%;
     }
 </style>
 </html>
