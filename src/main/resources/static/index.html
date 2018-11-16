@@ -96,7 +96,7 @@
                             <h4>Tags</h4>
                             <div class="tag-panel">
                                 <el-badge v-for="t in tags" :value="t.weight"
-                                          :type="t.weight > 10 ? 'danger' : 'primary'">
+                                          :type="t.weight > 8 ? 'danger' : 'primary'">
                                     <el-button size="mini">{{ t.name }}</el-button>
                                 </el-badge>
                             </div>
@@ -115,8 +115,8 @@
                         <el-table :data="movies" stripe height="320px">
                             <el-table-column type="expand">
                                 <template slot-scope="props">
-                                    <el-popover placement="top-end" width="300" trigger="hover">
-                                        <img :src="props.row.picUrl" class="image">
+                                    <el-popover placement="top-end" width="100" trigger="hover">
+                                        <img :src="props.row.picUrl" class="image" v-if="!!props.row.picUrl">
                                         <el-form slot="reference" label-position="left" inline
                                                  class="demo-table-expand">
                                             <el-form-item label="All Critics rating">

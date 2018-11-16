@@ -53,10 +53,14 @@
 
     <repositories>
         <repository>
-            <id>maven.oracle.com</id>
-            <name>oracle-maven-repo</name>
-            <url>https://maven.oracle.com</url>
+            <id>my-local-repo</id>
+            <url>file://${basedir}/oracle_repo</url>
         </repository>
+        <!--<repository>-->
+        <!--<id>maven.oracle.com</id>-->
+        <!--<name>oracle-maven-repo</name>-->
+        <!--<url>https://maven.oracle.com</url>-->
+        <!--</repository>-->
     </repositories>
 
 </project>
