@@ -39,13 +39,29 @@
                         </el-checkbox-group>
                     </el-card>
                 </el-col>
-                <el-col :span="12"></el-col>
+                <el-col :span="8">
+                    <el-card shadow="hover">
+                        <el-form label-width="80px">
+                            <el-form-item label="Movie Year">
+                                <el-date-picker type="year" value-format="yyyy" v-model="startYear" size="mini"
+                                                placeholder="start year" style="width: 120px">
+                                </el-date-picker>
+                                <el-date-picker type="year" value-format="yyyy" v-model="endYear" size="mini"
+                                                placeholder="end year" style="width: 120px">
+                                </el-date-picker>
+                            </el-form-item>
+                        </el-form>
+                    </el-card>
+                </el-col>
             </el-row>
         </el-header>
         <el-main>
             <el-row :gutter="10">
                 <el-col :span="9">
                     <el-card shadow="never" v-loading="loadingEntities || loadingMovies">
+                        <el-switch v-model="relationshipBetweenAttributes"
+                                   active-color="#13CE66" inactive-color="#409EFF"
+                                   active-text="AND" inactive-text="OR"></el-switch>
                         <div class="sql-panel">
                             <pre><code>{{ sql }}</code></pre>
                         </div>
@@ -82,11 +98,14 @@
             countries: [],
             selectedMakingCountries: [],
             selectedFilmingCountries: [],
+            startYear: '',
+            endYear: '',
             loadingEntities: false,
             movies: [],
             loadingMovies: false,
             currentPage: 1,
             moviesCount: 0,
+            relationshipBetweenAttributes: true,
             sql: '',
             availableGenres: new Set(),
             availableCountries: new Set(),
@@ -100,6 +119,15 @@
                 this.prepareMovies();
             },
             selectedFilmingCountries: function () {
+                this.prepareMovies();
+            },
+            startYear: function () {
+                this.prepareMovies();
+            },
+            endYear: function () {
+                this.prepareMovies();
+            },
+            relationshipBetweenAttributes: function () {
                 this.prepareMovies();
             },
             currentPage: function () {
@@ -127,6 +155,12 @@
             isLocationAvailable: function (id) {
                 return this.availableLocations.has(id);
             },
+            removeIfNotExists: function (source, set) {
+                var i = source.length;
+                while (i--)
+                    if (!set.has(source[i]))
+                        source.splice(i, 1);
+            },
             prepareMovies: function () {
                 var vm = this;
                 vm.loadingEntities = true;
@@ -134,25 +168,19 @@
                     params: {
                         genres: this.selectedGenres.join(','),
                         countries: this.selectedMakingCountries.join(','),
-                        locations: this.selectedFilmingCountries.join(',')
+                        locations: this.selectedFilmingCountries.join(','),
+                        startYear: this.startYear,
+                        endYear: this.endYear,
+                        relationshipBetweenAttributes: this.relationshipBetweenAttributes
                     }
                 }).then(function (response) {
                     vm.sql = response.data.sql;
                     vm.availableGenres = new Set(response.data.availableGenres);
-                    var i = vm.selectedGenres.length;
-                    while (i--)
-                        if (!vm.availableGenres.has(vm.selectedGenres[i]))
-                            vm.selectedGenres.splice(i, 1);
+                    vm.removeIfNotExists(vm.selectedGenres, vm.availableGenres);
                     vm.availableCountries = new Set(response.data.availableCountries);
-                    var i = vm.selectedMakingCountries.length;
-                    while (i--)
-                        if (!vm.availableCountries.has(vm.selectedMakingCountries[i]))
-                            vm.selectedMakingCountries.splice(i, 1);
+                    vm.removeIfNotExists(vm.selectedMakingCountries, vm.availableCountries);
                     vm.availableLocations = new Set(response.data.availableLocations);
-                    var i = vm.selectedFilmingCountries.length;
-                    while (i--)
-                        if (!vm.availableLocations.has(vm.selectedFilmingCountries[i]))
-                            vm.selectedFilmingCountries.splice(i, 1);
+                    vm.removeIfNotExists(vm.selectedFilmingCountries, vm.availableLocations);
                     vm.loadingEntities = false;
                     vm.currentPage = 1;
                     vm.debouncedGetMovies();
@@ -166,6 +194,9 @@
                         genres: this.selectedGenres.join(','),
                         countries: this.selectedMakingCountries.join(','),
                         locations: this.selectedFilmingCountries.join(','),
+                        startYear: this.startYear,
+                        endYear: this.endYear,
+                        relationshipBetweenAttributes: this.relationshipBetweenAttributes,
                         page: this.currentPage
                     }
                 }).then(function (response) {
@@ -189,7 +220,8 @@
     }
 
     .sql-panel {
-        height: 345px;
+        margin-top: 30px;
+        height: 320px;
     }
 
     .sql-panel pre {
