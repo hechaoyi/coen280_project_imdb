@@ -17,6 +17,7 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 
 @SpringBootApplication
 @RestController
@@ -65,20 +66,24 @@ public class Application {
             return jdbcTemplate.getJdbcTemplate().queryForList(sql, Integer.class);
         MapSqlParameterSource params = new MapSqlParameterSource();
         if (countries != null && !countries.isBlank()) {
-            sql += " AND EXISTS(SELECT 1 FROM movie_country WHERE movie_id=g.movie_id AND country_id IN (:countries))";
-            params.addValue("countries", Arrays.asList(countries.split(",")));
+            List<String> countryList = Arrays.asList(countries.split(","));
+            sql += " AND (" + IntStream.range(0, countryList.size()).mapToObj(i ->
+                    "EXISTS(SELECT 1 FROM movie_country WHERE movie_id=g.movie_id AND country_id=:countries" + i + ")")
+                    .collect(Collectors.joining(relationshipBetweenAttributes ? " AND " : " OR ")) + ")";
+            for (int i = 0; i < countryList.size(); i++)
+                params.addValue("countries" + i, countryList.get(i));
         }
         if (locations != null && !locations.isBlank()) {
-            sql += " AND EXISTS(SELECT 1 FROM movie_location WHERE movie_id=g.movie_id AND country_id IN (:locations))";
-            params.addValue("locations", Arrays.asList(locations.split(",")));
+            List<String> locationList = Arrays.asList(locations.split(","));
+            sql += " AND (" + IntStream.range(0, locationList.size()).mapToObj(i ->
+                    "EXISTS(SELECT 1 FROM movie_location WHERE movie_id=g.movie_id AND country_id=:locations" + i + ")")
+                    .collect(Collectors.joining(relationshipBetweenAttributes ? " AND " : " OR ")) + ")";
+            for (int i = 0; i < locationList.size(); i++)
+                params.addValue("locations" + i, locationList.get(i));
         }
         if (startYear != null && !startYear.isBlank() || endYear != null && !endYear.isBlank()) {
             sql += " AND EXISTS(SELECT 1 FROM movie WHERE id=g.movie_id AND year BETWEEN :startYear AND :endYear)";
-            if (startYear == null || startYear.isBlank())
-                startYear = "1900";
-            if (endYear == null || endYear.isBlank())
-                endYear = "2100";
-            params.addValue("startYear", startYear).addValue("endYear", endYear);
+            fillYearCond(startYear, endYear, params);
         }
         if (ratingOp != null && !ratingOp.isBlank()) {
             sql += " AND EXISTS(SELECT 1 FROM movie WHERE id=g.movie_id AND FLOOR(all_critics_rating)" + op(ratingOp) + ":ratingVal)";
@@ -101,20 +106,24 @@ public class Application {
             return jdbcTemplate.getJdbcTemplate().queryForList(sql, Integer.class);
         MapSqlParameterSource params = new MapSqlParameterSource();
         if (genres != null && !genres.isBlank()) {
-            sql += " AND EXISTS(SELECT 1 FROM movie_genre WHERE movie_id=c.movie_id AND genre_id IN (:genres))";
-            params.addValue("genres", Arrays.asList(genres.split(",")));
+            List<String> genreList = Arrays.asList(genres.split(","));
+            sql += " AND (" + IntStream.range(0, genreList.size()).mapToObj(i ->
+                    "EXISTS(SELECT 1 FROM movie_genre WHERE movie_id=c.movie_id AND genre_id=:genres" + i + ")")
+                    .collect(Collectors.joining(relationshipBetweenAttributes ? " AND " : " OR ")) + ")";
+            for (int i = 0; i < genreList.size(); i++)
+                params.addValue("genres" + i, genreList.get(i));
         }
         if (locations != null && !locations.isBlank()) {
-            sql += " AND EXISTS(SELECT 1 FROM movie_location WHERE movie_id=c.movie_id AND country_id IN (:locations))";
-            params.addValue("locations", Arrays.asList(locations.split(",")));
+            List<String> locationList = Arrays.asList(locations.split(","));
+            sql += " AND (" + IntStream.range(0, locationList.size()).mapToObj(i ->
+                    "EXISTS(SELECT 1 FROM movie_location WHERE movie_id=c.movie_id AND country_id=:locations" + i + ")")
+                    .collect(Collectors.joining(relationshipBetweenAttributes ? " AND " : " OR ")) + ")";
+            for (int i = 0; i < locationList.size(); i++)
+                params.addValue("locations" + i, locationList.get(i));
         }
         if (startYear != null && !startYear.isBlank() || endYear != null && !endYear.isBlank()) {
             sql += " AND EXISTS(SELECT 1 FROM movie WHERE id=c.movie_id AND year BETWEEN :startYear AND :endYear)";
-            if (startYear == null || startYear.isBlank())
-                startYear = "1900";
-            if (endYear == null || endYear.isBlank())
-                endYear = "2100";
-            params.addValue("startYear", startYear).addValue("endYear", endYear);
+            fillYearCond(startYear, endYear, params);
         }
         if (ratingOp != null && !ratingOp.isBlank()) {
             sql += " AND EXISTS(SELECT 1 FROM movie WHERE id=c.movie_id AND FLOOR(all_critics_rating)" + op(ratingOp) + ":ratingVal)";
@@ -137,20 +146,24 @@ public class Application {
             return jdbcTemplate.getJdbcTemplate().queryForList(sql, Integer.class);
         MapSqlParameterSource params = new MapSqlParameterSource();
         if (genres != null && !genres.isBlank()) {
-            sql += " AND EXISTS(SELECT 1 FROM movie_genre WHERE movie_id=l.movie_id AND genre_id IN (:genres))";
-            params.addValue("genres", Arrays.asList(genres.split(",")));
+            List<String> genreList = Arrays.asList(genres.split(","));
+            sql += " AND (" + IntStream.range(0, genreList.size()).mapToObj(i ->
+                    "EXISTS(SELECT 1 FROM movie_genre WHERE movie_id=l.movie_id AND genre_id=:genres" + i + ")")
+                    .collect(Collectors.joining(relationshipBetweenAttributes ? " AND " : " OR ")) + ")";
+            for (int i = 0; i < genreList.size(); i++)
+                params.addValue("genres" + i, genreList.get(i));
         }
         if (countries != null && !countries.isBlank()) {
-            sql += " AND EXISTS(SELECT 1 FROM movie_country WHERE movie_id=l.movie_id AND country_id IN (:countries))";
-            params.addValue("countries", Arrays.asList(countries.split(",")));
+            List<String> countryList = Arrays.asList(countries.split(","));
+            sql += " AND (" + IntStream.range(0, countryList.size()).mapToObj(i ->
+                    "EXISTS(SELECT 1 FROM movie_country WHERE movie_id=l.movie_id AND country_id=:countries" + i + ")")
+                    .collect(Collectors.joining(relationshipBetweenAttributes ? " AND " : " OR ")) + ")";
+            for (int i = 0; i < countryList.size(); i++)
+                params.addValue("countries" + i, countryList.get(i));
         }
         if (startYear != null && !startYear.isBlank() || endYear != null && !endYear.isBlank()) {
             sql += " AND EXISTS(SELECT 1 FROM movie WHERE id=l.movie_id AND year BETWEEN :startYear AND :endYear)";
-            if (startYear == null || startYear.isBlank())
-                startYear = "1900";
-            if (endYear == null || endYear.isBlank())
-                endYear = "2100";
-            params.addValue("startYear", startYear).addValue("endYear", endYear);
+            fillYearCond(startYear, endYear, params);
         }
         if (ratingOp != null && !ratingOp.isBlank()) {
             sql += " AND EXISTS(SELECT 1 FROM movie WHERE id=l.movie_id AND FLOOR(all_critics_rating)" + op(ratingOp) + ":ratingVal)";
@@ -169,29 +182,36 @@ public class Application {
                          boolean relationshipBetweenAttributes,
                          List<String> criteria, MapSqlParameterSource params) {
         if (genres != null && !genres.isBlank()) {
-            criteria.add("EXISTS(SELECT 1 FROM movie_genre WHERE movie_id=m.id AND genre_id IN (:genres))");
+            List<String> genreList = Arrays.asList(genres.split(","));
+            criteria.add("(" + IntStream.range(0, genreList.size()).mapToObj(i ->
+                    "EXISTS(SELECT 1 FROM movie_genre WHERE movie_id=m.id AND genre_id=:genres" + i + ")")
+                    .collect(Collectors.joining(relationshipBetweenAttributes ? " AND " : " OR ")) + ")");
             if (params != null)
-                params.addValue("genres", Arrays.asList(genres.split(",")));
+                for (int i = 0; i < genreList.size(); i++)
+                    params.addValue("genres" + i, genreList.get(i));
         }
         if (countries != null && !countries.isBlank()) {
-            criteria.add("EXISTS(SELECT 1 FROM movie_country WHERE movie_id=m.id AND country_id IN (:countries))");
+            List<String> countryList = Arrays.asList(countries.split(","));
+            criteria.add("(" + IntStream.range(0, countryList.size()).mapToObj(i ->
+                    "EXISTS(SELECT 1 FROM movie_country WHERE movie_id=m.id AND country_id=:countries" + i + ")")
+                    .collect(Collectors.joining(relationshipBetweenAttributes ? " AND " : " OR ")) + ")");
             if (params != null)
-                params.addValue("countries", Arrays.asList(countries.split(",")));
+                for (int i = 0; i < countryList.size(); i++)
+                    params.addValue("countries" + i, countryList.get(i));
         }
         if (locations != null && !locations.isBlank()) {
-            criteria.add("EXISTS(SELECT 1 FROM movie_location WHERE movie_id=m.id AND country_id IN (:locations))");
+            List<String> locationList = Arrays.asList(locations.split(","));
+            criteria.add("(" + IntStream.range(0, locationList.size()).mapToObj(i ->
+                    "EXISTS(SELECT 1 FROM movie_location WHERE movie_id=m.id AND country_id=:locations" + i + ")")
+                    .collect(Collectors.joining(relationshipBetweenAttributes ? " AND " : " OR ")) + ")");
             if (params != null)
-                params.addValue("locations", Arrays.asList(locations.split(",")));
+                for (int i = 0; i < locationList.size(); i++)
+                    params.addValue("locations" + i, locationList.get(i));
         }
         if (startYear != null && !startYear.isBlank() || endYear != null && !endYear.isBlank()) {
             criteria.add("m.year BETWEEN :startYear AND :endYear");
-            if (params != null) {
-                if (startYear == null || startYear.isBlank())
-                    startYear = "1900";
-                if (endYear == null || endYear.isBlank())
-                    endYear = "2100";
-                params.addValue("startYear", startYear).addValue("endYear", endYear);
-            }
+            if (params != null)
+                fillYearCond(startYear, endYear, params);
         }
         if (ratingOp != null && !ratingOp.isBlank()) {
             criteria.add("FLOOR(m.all_critics_rating)" + op(ratingOp) + ":ratingVal");
@@ -209,11 +229,18 @@ public class Application {
                 " FROM movie m";
         if (criteria.isEmpty())
             return select + " ORDER BY id";
-        if (criteria.size() == 1 || relationshipBetweenAttributes)
-            return String.format("%s\n  WHERE %s\nORDER BY id",
-                    select, String.join("\n  AND ", criteria));
-        return String.format("%s JOIN (\n  SELECT id FROM movie m\n    WHERE %s\n) m2 ON m.id=m2.id ORDER BY m2.id",
-                select, String.join("\n  UNION\n  SELECT id FROM movie m\n    WHERE ", criteria));
+//        if (criteria.size() == 1 || relationshipBetweenAttributes)
+        return String.format("%s\n  WHERE %s\nORDER BY id", select, String.join("\n  AND ", criteria));
+//        return String.format("%s JOIN (\n  SELECT id FROM movie m\n    WHERE %s\n) m2 ON m.id=m2.id ORDER BY m2.id",
+//                select, String.join("\n  UNION\n  SELECT id FROM movie m\n    WHERE ", criteria));
+    }
+
+    private void fillYearCond(String startYear, String endYear, MapSqlParameterSource params) {
+        if (startYear == null || startYear.isBlank())
+            startYear = "1900";
+        if (endYear == null || endYear.isBlank())
+            endYear = "2100";
+        params.addValue("startYear", startYear).addValue("endYear", endYear);
     }
 
     private String op(String op) {
@@ -236,7 +263,7 @@ public class Application {
         List<Movie> movies = jdbcTemplate.query(sql, params, movieMapper);
         fillInSubData(movies);
         List<Tag> tags = null;
-        if (criteria.size() > 1 && relationshipBetweenAttributes)
+        if (criteria.size() > 1)
             tags = fillInTagData(criteria, params);
         return new Page(movies, count, tags);
     }
@@ -285,7 +312,7 @@ public class Application {
         String sql = String.format("FROM movie m JOIN movie_tag ON m.id=movie_id WHERE %s",
                 String.join(" AND ", criteria));
         int count = jdbcTemplate.queryForObject("SELECT COUNT(DISTINCT tag_id) " + sql, params, Integer.class);
-        if (count > 200)
+        if (count > 400)
             return null;
         sql = "SELECT name,weight FROM tag JOIN (" +
                 "SELECT tag_id,SUM(weight) weight " + sql + " GROUP BY tag_id" +

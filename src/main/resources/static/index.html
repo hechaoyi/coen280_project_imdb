@@ -93,7 +93,7 @@
                 <el-col :span="8">
                     <el-row>
                         <el-card shadow="never" v-loading="loadingEntities">
-                            <h4>Tags</h4>
+                            <h4>Tags <span v-if="tags"> - {{ tags.length }}</span></h4>
                             <div class="tag-panel">
                                 <el-badge v-for="t in tags" :value="t.weight"
                                           :type="t.weight > 8 ? 'danger' : 'primary'">
@@ -200,37 +200,37 @@
         },
         watch: {
             selectedGenres: function () {
-                this.prepareMovies();
+                this.debouncedPrepareMovies();
             },
             selectedMakingCountries: function () {
-                this.prepareMovies();
+                this.debouncedPrepareMovies();
             },
             selectedFilmingCountries: function () {
-                this.prepareMovies();
+                this.debouncedPrepareMovies();
             },
             startYear: function () {
-                this.prepareMovies();
+                this.debouncedPrepareMovies();
             },
             endYear: function () {
-                this.prepareMovies();
+                this.debouncedPrepareMovies();
             },
             ratingOp: function () {
-                this.prepareMovies();
+                this.debouncedPrepareMovies();
             },
             ratingVal: function () {
                 if (!this.ratingOp)
                     this.ratingOp = '≥';
                 else
-                    this.prepareMovies();
+                    this.debouncedPrepareMovies();
             },
             reviewsOp: function () {
-                this.prepareMovies();
+                this.debouncedPrepareMovies();
             },
             reviewsVal: function () {
                 if (!this.reviewsOp)
                     this.reviewsOp = '≥';
                 else
-                    this.prepareMovies();
+                    this.debouncedPrepareMovies();
             },
             relationshipBetweenAttributes: function () {
                 this.prepareMovies();
@@ -248,6 +248,7 @@
                 vm.loadingEntities = false;
             });
             this.prepareMovies();
+            this.debouncedPrepareMovies = _.debounce(this.prepareMovies, 2000)
             this.debouncedGetMovies = _.debounce(this.getMovies, 100)
         },
         methods: {
